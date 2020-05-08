@@ -1,11 +1,10 @@
 ---
-title: Hello World
+title: Hello Blog
+description: First post on new blog
 ---
 
-Welcome to your [`Rib`](https://rib.srid.ca) generated site.
+Hello, welcome to my new blog site! I built it with [`Rib`](https://rib.srid.ca).
 
-> Be totally sincere ... most definitely utterly sincere, as genuineness is essential. But serious ... no way
+> A deep introspective quote that is also motivational.
 
-> Naiveté is so vital to freedom. This is because even the strictest application of moralistic and ethicalistic injunctions will never lead to the clean clarity of the purity of living the perfection of the infinitude of this material universe.
-
---*Someone free*
+--*Someone famous*

@@ -14,7 +14,7 @@ rib ? builtins.fetchTarball
   # Cabal project root
 , root ? gitignoreSource ./.
   # Cabal project name
-, name ? "rib-sample", ... }:
+, name ? "static-site", ... }:
 
 let
   source-overrides = {
