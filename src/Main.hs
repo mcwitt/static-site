@@ -61,13 +61,15 @@ generateSite = do
   Rib.buildStaticFiles ["static/**"]
   let writeHtmlRoute :: Route a -> a -> Action ()
       writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage r
+      mkArticle reader srcPath = do
+        let r = Route_Article srcPath
+        doc <- Pandoc.parse reader srcPath
+        writeHtmlRoute r doc
+        pure (r, doc)
   -- Build individual sources, generating .html for each.
   articles <-
-    Rib.forEvery ["*.md"] $ \srcPath -> do
-      let r = Route_Article srcPath
-      doc <- Pandoc.parse Pandoc.readMarkdown srcPath
-      writeHtmlRoute r doc
-      pure (r, doc)
+    Rib.forEvery ["*.md"] (mkArticle Pandoc.readMarkdown)
+      <> Rib.forEvery ["*.org"] (mkArticle Pandoc.readOrg)
   writeHtmlRoute Route_Index articles
 
 -- | Define your site HTML here

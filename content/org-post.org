@@ -1,0 +1,18 @@
+#+title: Org post
+
+* Org mode
+Testing org-mode
+
+* Other stuff
+Here's a table:
+
+| foo | bar | baz |
+|-----+-----+-----|
+|   1 |   2 |   3 |
+
+- definition :: blah
+
+#+begin_src haskell
+  filterPrimes (p : ps) = p : filterPrimes [n | n <- ps, n `mod` p /= 0]
+  primes = filterPrimes [2 ..]
+#+end_src
