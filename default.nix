@@ -4,21 +4,21 @@ let
   # ChangeLog.md to check any notes on API migration.
   ribRevision = "157f466";
 
-  inherit (import (builtins.fetchTarball "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { }) gitignoreSource;
+  inherit (import (builtins.fetchTarball
+    "https://github.com/hercules-ci/gitignore/archive/7415c4f.tar.gz") { })
+    gitignoreSource;
 in {
 # Rib library source to use
-  rib ? builtins.fetchTarball "https://github.com/srid/rib/archive/${ribRevision}.tar.gz"
-# Cabal project root
+rib ? builtins.fetchTarball
+  "https://github.com/srid/rib/archive/${ribRevision}.tar.gz"
+  # Cabal project root
 , root ? gitignoreSource ./.
-# Cabal project name
-, name ? "rib-sample"
-, ...
-}:
+  # Cabal project name
+, name ? "rib-sample", ... }:
 
-let 
+let
   source-overrides = {
-    with-utf8 = builtins.fetchTarball "https://github.com/serokell/haskell-with-utf8/archive/v1.0.0.0.tar.gz";
+    with-utf8 = builtins.fetchTarball
+      "https://github.com/serokell/haskell-with-utf8/archive/v1.0.0.0.tar.gz";
   };
-in import rib { 
-  inherit root name source-overrides; 
-}
+in import rib { inherit root name source-overrides; }
