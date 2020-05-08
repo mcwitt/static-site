@@ -14,11 +14,13 @@ rib ? builtins.fetchTarball
   # Cabal project root
 , root ? gitignoreSource ./.
   # Cabal project name
-, name ? "static-site", ... }:
+, name ? "static-site"
+  # Haskell package overrides
+, overrides ? self: super: { }, ... }:
 
 let
   source-overrides = {
     with-utf8 = builtins.fetchTarball
       "https://github.com/serokell/haskell-with-utf8/archive/v1.0.0.0.tar.gz";
   };
-in import rib { inherit root name source-overrides; }
+in import rib { inherit root name overrides source-overrides; }
