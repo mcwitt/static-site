@@ -30,6 +30,7 @@ import System.FilePath
 data Route a where
   Route_Index :: Route [(Route Pandoc, Pandoc)]
   Route_Article :: FilePath -> Route Pandoc
+  Route_AboutMe :: Route Pandoc
 
 -- | The `IsRoute` instance allows us to determine the target .html path for
 -- each route. This affects what `routeUrl` will return.
@@ -39,6 +40,8 @@ instance IsRoute Route where
       pure "index.html"
     Route_Article srcPath ->
       pure $ "article" </> srcPath -<.> ".html"
+    Route_AboutMe ->
+      pure "me.html"
 
 -- | Main entry point to our generator.
 --
@@ -68,9 +71,10 @@ generateSite = do
         pure (r, doc)
   -- Build individual sources, generating .html for each.
   articles <-
-    Rib.forEvery ["*.md"] (mkArticle Pandoc.readMarkdown)
-      <> Rib.forEvery ["*.org"] (mkArticle Pandoc.readOrg)
+    Rib.forEvery ["posts" </> "*.md"] (mkArticle Pandoc.readMarkdown)
+      <> Rib.forEvery ["posts" </> "*.org"] (mkArticle Pandoc.readOrg)
   writeHtmlRoute Route_Index articles
+  Pandoc.parse Pandoc.readMarkdown "me.md" >>= writeHtmlRoute Route_AboutMe
 
 -- | Define your site HTML here
 renderPage :: Route a -> a -> Html ()
@@ -80,8 +84,12 @@ renderPage route val = html_ [lang_ "en"] $ do
     title_ routeTitle
     style_ [type_ "text/css"] $ C.render pageStyle
   body_ $ do
-    div_ [class_ "header"] $
-      a_ [href_ "/"] "Back to Home"
+    div_ [class_ "header"]
+      $ nav_
+      $ ul_
+      $ do
+        li_ $ a_ [href_ "/"] "Home"
+        li_ $ a_ [href_ "/me.html"] "About me"
     h1_ routeTitle
     case route of
       Route_Index ->
@@ -93,11 +101,15 @@ renderPage route val = html_ [lang_ "en"] $ do
       Route_Article _ ->
         article_ $
           Pandoc.render val
+      Route_AboutMe ->
+        p_ $
+          Pandoc.render val
   where
     routeTitle :: Html ()
     routeTitle = case route of
       Route_Index -> "Blaaahg"
       Route_Article _ -> toHtml $ title $ getMeta val
+      Route_AboutMe -> "About me"
     renderMarkdown :: Text -> Html ()
     renderMarkdown =
       Pandoc.render . Pandoc.parsePure Pandoc.readMarkdown
