@@ -12,9 +12,11 @@ executable static-site
   build-depends:    base
                   , aeson
                   , clay
+                  , dhall-resume
                   , filepath
+                  , lens
                   , lucid
-                  , rib       ^>= 0.9
+                  , rib          ^>= 0.9
                   , shake
                   , text
                   , with-utf8

@@ -22,5 +22,7 @@ let
   source-overrides = {
     with-utf8 = builtins.fetchTarball
       "https://github.com/serokell/haskell-with-utf8/archive/v1.0.0.0.tar.gz";
+    dhall-resume = ./content/resume/resume/dhall-resume;
   };
+
 in import rib { inherit root name overrides source-overrides; }

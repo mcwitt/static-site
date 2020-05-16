@@ -9,6 +9,7 @@ module Main where
 
 import Clay ((?), Css, em, pc, px, sym)
 import qualified Clay as C
+import Control.Lens
 import Control.Monad
 import Data.Aeson (FromJSON, fromJSON)
 import qualified Data.Aeson as Aeson
@@ -18,6 +19,8 @@ import Development.Shake
 import GHC.Generics (Generic)
 import Lucid
 import Main.Utf8
+import Resume (defaultInputSettings, readResume, rootDirectory)
+import Resume.Backend.Html (def, renderHtmlBody, renderHtmlStyles)
 import Rib (IsRoute, Pandoc)
 import qualified Rib
 import qualified Rib.Parser.Pandoc as Pandoc
@@ -31,6 +34,7 @@ data Route a where
   Route_Index :: Route [(Route Pandoc, Pandoc)]
   Route_Article :: FilePath -> Route Pandoc
   Route_AboutMe :: Route Pandoc
+  Route_Resume :: Route (Html ())
 
 -- | The `IsRoute` instance allows us to determine the target .html path for
 -- each route. This affects what `routeUrl` will return.
@@ -42,6 +46,8 @@ instance IsRoute Route where
       pure $ "article" </> srcPath -<.> ".html"
     Route_AboutMe ->
       pure "me.html"
+    Route_Resume ->
+      pure "resume.html"
 
 -- | Main entry point to our generator.
 --
@@ -62,11 +68,15 @@ generateSite :: Action ()
 generateSite = do
   -- Copy over the static files
   Rib.buildStaticFiles ["static/**"]
-  let writeHtmlRoute :: Route a -> a -> Action ()
-      writeHtmlRoute r = Rib.writeRoute r . Lucid.renderText . renderPage r
-      mkArticle reader srcPath = do
+  let writeHtmlRoute' :: Html () -> Route a -> a -> Action ()
+      writeHtmlRoute' extraHeader r =
+        Rib.writeRoute r
+          . Lucid.renderText
+          . renderPage extraHeader r
+      writeHtmlRoute = writeHtmlRoute' mempty
+      mkArticle readFn srcPath = do
         let r = Route_Article srcPath
-        doc <- Pandoc.parse reader srcPath
+        doc <- Pandoc.parse readFn srcPath
         writeHtmlRoute r doc
         pure (r, doc)
   -- Build individual sources, generating .html for each.
@@ -75,14 +85,22 @@ generateSite = do
       <> Rib.forEvery ["posts" </> "*.org"] (mkArticle Pandoc.readOrg)
   writeHtmlRoute Route_Index articles
   Pandoc.parse Pandoc.readMarkdown "me.md" >>= writeHtmlRoute Route_AboutMe
+  -- Resume
+  contentDir <- Rib.ribInputDir
+  let settings = defaultInputSettings & rootDirectory .~ contentDir
+  resume <- liftIO $ readResume settings (contentDir </> "resume.dhall")
+  case renderHtmlBody def resume of
+    Right r -> writeHtmlRoute' (Resume.Backend.Html.renderHtmlStyles def) Route_Resume r
+    Left e -> fail $ show e
 
 -- | Define your site HTML here
-renderPage :: Route a -> a -> Html ()
-renderPage route val = html_ [lang_ "en"] $ do
+renderPage :: Html () -> Route a -> a -> Html ()
+renderPage extraHeader route val = html_ [lang_ "en"] $ do
   head_ $ do
     meta_ [httpEquiv_ "Content-Type", content_ "text/html; charset=utf-8"]
     title_ routeTitle
     style_ [type_ "text/css"] $ C.render pageStyle
+    extraHeader
   body_ $ do
     div_ [class_ "header"]
       $ nav_
@@ -90,6 +108,7 @@ renderPage route val = html_ [lang_ "en"] $ do
       $ do
         li_ $ a_ [href_ "/"] "Home"
         li_ $ a_ [href_ "/me.html"] "About me"
+        li_ $ a_ [href_ "/resume.html"] "Resume"
     h1_ routeTitle
     case route of
       Route_Index ->
@@ -104,12 +123,14 @@ renderPage route val = html_ [lang_ "en"] $ do
       Route_AboutMe ->
         p_ $
           Pandoc.render val
+      Route_Resume -> val
   where
     routeTitle :: Html ()
     routeTitle = case route of
       Route_Index -> "Blaaahg"
       Route_Article _ -> toHtml $ title $ getMeta val
       Route_AboutMe -> "About me"
+      Route_Resume -> "Matt Wittmann"
     renderMarkdown :: Text -> Html ()
     renderMarkdown =
       Pandoc.render . Pandoc.parsePure Pandoc.readMarkdown
